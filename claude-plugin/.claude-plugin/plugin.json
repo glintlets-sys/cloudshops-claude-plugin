@@ -1,0 +1,29 @@
+{
+  "name": "cloudshops-analytics",
+  "description": "Query the Cloudshops analytics database from your LLM client using friendly business names. Read-only SELECT/WITH only. Saves and loads analyses in your tenant-scoped S3 prefix.",
+  "version": "0.4.0",
+  "author": "Cloudshops",
+  "userConfig": {
+    "profile": {
+      "type": "string",
+      "title": "Preset profile (optional)",
+      "description": "Pick a known tenant preset so you only have to enter the API token. Currently supported: 'dinasi-stage'. Leave empty to enter API URL and Tenant ID manually below."
+    },
+    "api_url": {
+      "type": "string",
+      "title": "Backend API URL",
+      "description": "Cloudshops backend gateway base URL, e.g. https://api.example.com (no trailing slash). Required if no profile is selected. Overrides the profile preset when set."
+    },
+    "api_token": {
+      "type": "string",
+      "title": "Analytics API Token",
+      "description": "JWT minted in your tenant admin -> Settings -> API Tokens with scope=analytics:read. Stored in the system keychain.",
+      "sensitive": true
+    },
+    "tenant_id": {
+      "type": "string",
+      "title": "Tenant ID",
+      "description": "Tenant identifier sent in the x-tenant header. Must match the tenant claim in the JWT. Required if no profile is selected. Overrides the profile preset when set."
+    }
+  }
+}

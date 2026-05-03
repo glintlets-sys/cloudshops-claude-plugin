@@ -1,0 +1,37 @@
+{
+  "name": "cloudshops-mcp-analytics",
+  "version": "0.4.0",
+  "description": "MCP server exposing the Cloudshops analytics DB to LLM clients via the backend query gateway. Friendly business names + 5 tools: describe_schema, run_sql, save_analysis, list_saved_analyses, load_analysis. Profile presets supported.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "cloudshops-mcp-analytics": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/glintlets-sys/cloudshops-claude-plugin.git",
+    "directory": "claude-plugin/server"
+  }
+}
