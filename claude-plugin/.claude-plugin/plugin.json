@@ -2,7 +2,9 @@
   "name": "cloudshops-analytics",
   "description": "Query the Cloudshops analytics database from your LLM client using friendly business names. Read-only SELECT/WITH only. Saves and loads analyses in your tenant-scoped S3 prefix.",
   "version": "0.4.0",
-  "author": "Cloudshops",
+  "author": {
+    "name": "Cloudshops"
+  },
   "userConfig": {
     "profile": {
       "type": "string",
