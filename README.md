@@ -76,6 +76,8 @@ Expected: `{"columns":["one"],"rows":[[1]],"rowCount":1,"truncated":false,...}`
 
 ```
 .
+├── .claude-plugin/
+│   └── marketplace.json        Marketplace manifest — makes this repo installable via `/plugin marketplace add`
 ├── claude-plugin/              Drop-in Claude Code plugin
 │   ├── .claude-plugin/
 │   │   └── plugin.json         Plugin manifest + userConfig schema (profile + 3 vars)

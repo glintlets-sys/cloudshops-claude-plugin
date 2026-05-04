@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "cloudshops-claude-plugin",
+  "description": "Cloudshops analytics MCP plugin — query your tenant analytics DB in plain language via the Cloudshops backend gateway.",
+  "owner": {
+    "name": "Cloudshops"
+  },
+  "plugins": [
+    {
+      "name": "cloudshops-analytics",
+      "description": "Query the Cloudshops analytics database from your LLM client using friendly business names. Read-only SELECT/WITH only. Saves and loads analyses in your tenant-scoped S3 prefix.",
+      "author": {
+        "name": "Cloudshops"
+      },
+      "category": "data",
+      "source": "./claude-plugin",
+      "homepage": "https://github.com/glintlets-sys/cloudshops-claude-plugin"
+    }
+  ]
+}

@@ -1,29 +1,23 @@
 # Install — Claude Code
 
-Claude Code (CLI / IDE) supports MCP plugins natively. Install the entire
-`claude-plugin/` folder as a local plugin and Claude Code will prompt for
-your config on first enable.
+Claude Code installs plugins through a **marketplace**. This repo is itself a
+single-plugin marketplace (`.claude-plugin/marketplace.json` at the root), so
+you can register it directly from GitHub or from a local clone.
 
-## 1. Clone or download the plugin folder
+## Option A — Install from GitHub (recommended for end users)
 
-```bash
-mkdir -p ~/.claude/plugins/local
-git clone https://github.com/glintlets-sys/cloudshops-claude-plugin.git \
-  ~/.claude/plugins/local/cloudshops-claude-plugin
+In a Claude Code session, run:
+
+```
+/plugin marketplace add glintlets-sys/cloudshops-claude-plugin
+/plugin install cloudshops-analytics@cloudshops-claude-plugin
 ```
 
-The committed `dist/index.js` is self-contained — no `npm install` needed.
+(`/plugin marketplace add` accepts `owner/repo`, a full `https://...` git URL,
+or a local filesystem path.)
 
-## 2. Enable the plugin
-
-Point Claude Code at the plugin folder:
-
-```bash
-claude --plugin-dir ~/.claude/plugins/local/cloudshops-claude-plugin/claude-plugin
-```
-
-On first enable Claude Code will read `userConfig` from `plugin.json` and
-prompt you for the four values:
+On first enable Claude Code reads `userConfig` from the plugin's
+`plugin.json` and prompts you for the four values:
 
 | Prompt | What to enter |
 |---|---|
@@ -32,26 +26,56 @@ prompt you for the four values:
 | **Analytics API Token** | The JWT from your tenant admin → Settings → API Tokens (scope=`analytics:read`). Stored in your OS keychain. |
 | **Tenant ID** | If no profile: your tenant identifier. With a profile, leave empty. |
 
-## 3. Configure manually (alternative)
+Verify the plugin is enabled:
 
-If you prefer manual MCP server registration:
+```
+/plugin list
+```
+
+You should see `cloudshops-analytics@cloudshops-claude-plugin` with status
+`enabled`.
+
+## Option B — Install from a local clone (for development)
 
 ```bash
-# With a profile (only token needed):
+git clone https://github.com/glintlets-sys/cloudshops-claude-plugin.git \
+  ~/src/cloudshops-claude-plugin
+```
+
+Then in Claude Code:
+
+```
+/plugin marketplace add ~/src/cloudshops-claude-plugin
+/plugin install cloudshops-analytics@cloudshops-claude-plugin
+```
+
+The committed `claude-plugin/server/dist/index.js` is self-contained — no
+`npm install` needed unless you intend to rebuild after editing
+`server/src/index.ts`.
+
+## Option C — Manual MCP server registration (no plugin system)
+
+If you'd rather skip the plugin layer and register the MCP server directly:
+
+```bash
+# With a profile (only the token is required):
 claude mcp add cloudshops-analytics \
   --command node \
-  --args "$HOME/.claude/plugins/local/cloudshops-claude-plugin/claude-plugin/server/dist/index.js" \
+  --args "$HOME/src/cloudshops-claude-plugin/claude-plugin/server/dist/index.js" \
   --env CLOUDSHOPS_PROFILE=dinasi-stage \
   --env CLOUDSHOPS_API_TOKEN="<token>"
 
 # Without a profile (full custom):
 claude mcp add cloudshops-analytics \
   --command node \
-  --args "$HOME/.claude/plugins/local/cloudshops-claude-plugin/claude-plugin/server/dist/index.js" \
+  --args "$HOME/src/cloudshops-claude-plugin/claude-plugin/server/dist/index.js" \
   --env CLOUDSHOPS_API_URL=https://api.example.com \
   --env CLOUDSHOPS_API_TOKEN="<token>" \
   --env CLOUDSHOPS_TENANT_ID=your-tenant-id
 ```
+
+This route bypasses `userConfig` prompts and the plugin lifecycle, so updates
+have to be pulled and re-registered manually.
 
 ## 4. Try it
 
@@ -66,13 +90,18 @@ English using friendly business names ("Customer firms", "Orders",
 
 ## Updating
 
-```bash
-cd ~/.claude/plugins/local/cloudshops-claude-plugin
-git pull
+For Option A/B (plugin install):
+
+```
+/plugin update cloudshops-analytics@cloudshops-claude-plugin
 ```
 
-If a new version bumps the bundled `dist/index.js`, restart Claude Code
-to pick it up.
+For Option C (manual MCP):
+
+```bash
+cd ~/src/cloudshops-claude-plugin && git pull
+# then restart Claude Code so it re-reads dist/index.js
+```
 
 ## Troubleshooting
 
