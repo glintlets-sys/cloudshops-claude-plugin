@@ -16,10 +16,11 @@ After reading the actual ETL code, most "ETL bugs" turned out to be writer-side 
 | SEV-1 #2 — line-item `unit_price`/`total_price` NULL | **Queued** — parser now reads the `{amount, currency}` object shape the app emits | `bootstrapped` dinasi branch |
 | SEV-1 #3 — `staff_user_id` NULL | **Queued** — derived via territory join (`staff_customer_account_association` active at `creation_date` → `staff.current_user_id`); no longer reads `purchase.staff_user_id` | `bootstrapped` dinasi branch |
 | SEV-2 #5 — `coupon_code` "AC2301", `discount_amount` 0 | **Queued** — parser reads from `billSummary.coupon.couponCode/discountAmount` first; falls back to legacy `discount.code` only if non-placeholder | `bootstrapped` dinasi branch |
-| SEV-3 #11 — `product_name` NULL | **Queued** (partial) — added `itemName` as 3rd fallback. `product_code`/`image_link` still NULL because writer doesn't emit them at all. | `bootstrapped` dinasi branch |
+| SEV-3 #11 — `product_name`, `product_code`, `image_link` NULL | **Queued (full)** — `product_name` reads JSON's `productName`/`name`/`itemName` then falls back to `toy.name`; `product_code` falls back to `toy.code`; `image_link` falls back to `toy.thumbnail` then first `photo_links` entry. Pre-loaded once per run, no N+1. | `bootstrapped` dinasi branch (commit 8fcb25d) |
+| SEV-3 #9 — `primary_category_name` NULL | **Queued** — `DimToyLoader` now pre-loads the `ty_categories` tree and `toy_categories` edges, walks `parent_id` to find each toy's leaf category, and writes `primary_category_id` / `primary_category_name`. Tested with 12 cases (empty/null, single category, sibling branches, ties, unknown ids, cycles, orphans). | `bootstrapped` dinasi branch (commit 8fcb25d) |
+| SEV-2 #6 — `delivery_charge_amount` NULL | **Still not addressed.** Mobile app's `billSummary` doesn't emit `deliveryCharge`. ETL parser already looks for it; will populate as soon as the writer adds it. | Backlog (writer-side) |
 | SEV-1 #1 — warehouse 9 days stale | **Likely operational** — scheduler is wired (`AnalyticsLoadScheduledTask` cron `0 0 0 * * *` IST), loaders are correct. Two genuine ETL bugs were already fixed in `d98f4be` (Apr 30) but not deployed: `DimCustomerLoader` empty-load and `FactStaffCustomerAccountAssignmentLoader` ClassCastException. Most likely causes for the Apr-25 cutoff: (a) source `purchase` table has no rows since Apr 25, or (b) deployed backend hasn't picked up the d98f4be fix and one loader is throwing. | Verify on deploy + DB |
 | SEV-2 #4 — delivery tables empty/sparse | **Likely operational** — loaders are correct. `delivery_payment_collection` (9 rows) and `delivery_delivery_return` (2 rows) most likely have similarly few rows in the source. | Verify in source DB |
-| SEV-2 #6 — `delivery_charge_amount` NULL | **Not addressed** — mobile app's `billSummary` doesn't emit `deliveryCharge` at all; team chose not to change the app. | Backlog |
 | SEV-2 #7 — `payment_gateway` NULL | **Not addressed** — source `purchase.payment_gateway` column is NULL on every row; needs order-creation/payment-completion side fix. | Backlog |
 | SEV-3 #8 — `not_available` semantics | **Source data quality** — loader passes `t.not_available` through verbatim. | Source cleanup, separate from ETL |
 | SEV-3 #9 — `primary_category_name` NULL | **Known v1 deferral** — `DimToyLoader.java:23-26` comment: "needs schema verification before we wire it up. Tracked as a v2 enrichment." | v2 work |
@@ -252,8 +253,10 @@ The tool's output says "scoped to tenant **mcs-stage**", but the actual `tenant_
 - [x] **Top products by revenue** — parser fix queued (deploy + nightly run will populate)
 - [x] **Sales rep attribution** — territory-based derivation queued (deploy + nightly run will populate)
 - [x] **Coupon analytics** — parser fix queued (`coupon_code`, `discount_amount` will populate when the `coupon` block is present in the JSON)
+- [x] **Product name / code / image link denormalisation** — line items now fall back to `toy.name` / `toy.code` / `toy.thumbnail` (or first `photo_links` entry) when the JSON doesn't carry them
+- [x] **Category rollups (primary)** — `dim_toy.primary_category_id` / `primary_category_name` now populated with the leaf category from the `ty_categories` hierarchy walk
 - [ ] **Real-time / yesterday's numbers** — blocked on operational verification (most likely cause is no source orders since Apr 25)
 - [ ] **Delivery success rate, returns rate, payment-mode mix** — likely operational (source tables sparse)
-- [ ] **Delivery charge / payment-gateway slicing** — backlog (writer/source side)
-- [ ] **Catalog availability and category rollups** — `not_available` is source data quality; `primary_category_name` is a v2 ETL enrichment
-- [ ] **Brand rollups** — source data quality
+- [ ] **Delivery charge / payment-gateway slicing** — writer-side gap; ETL parser already reads them when present
+- [ ] **Catalog availability** — `not_available` semantics are source data quality, not ETL
+- [ ] **Brand rollups** — `dim_toy.brand` is correctly populated from `toy.brand`; the SKU-descriptor values are source data quality
