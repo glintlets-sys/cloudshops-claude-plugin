@@ -5,6 +5,32 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-05-04
+
+### Fixed
+- `dist/index.js` is now actually bundled with esbuild (`--bundle
+  --platform=node --format=esm`), not just transpiled by `tsc`. The
+  previous artifact `import`-ed `@modelcontextprotocol/sdk` at runtime,
+  so any clean `claude plugin install` (no `node_modules` next to the
+  cached dist) crashed with `ERR_MODULE_NOT_FOUND` and the MCP server
+  showed `✗ Failed to connect`. The README's "no `npm install` needed"
+  promise is now genuinely true.
+- Plugin manifest's `author` field is an object (`{ "name": "..." }`)
+  not a bare string, so `claude plugin install` validates instead of
+  rejecting with `author: Invalid input: expected object, received
+  string`. (Already shipped in repo HEAD before this version bump but
+  worth surfacing.)
+
+### Changed
+- Build script switched from `tsc` to `esbuild`; `tsc --noEmit` is now
+  exposed as `npm run typecheck` so type errors are still caught.
+- Repo is now installable via Claude Code's marketplace flow:
+  `.claude-plugin/marketplace.json` at repo root,
+  `docs/install-claude-code.md` rewritten around `/plugin marketplace
+  add` + `/plugin install`. (Earlier docs pointed at a `claude
+  --plugin-dir` flag for persistent install, which doesn't exist for
+  that purpose.)
+
 ## [0.4.0] - 2026-05-03
 
 ### Changed (BREAKING)
