@@ -20,7 +20,7 @@ dropdown and you only have to enter the API token. Currently supported:
 
 | Profile | API URL | Tenant |
 |---|---|---|
-| `dinasi-stage` | `https://api.dinasidirect.com` | `mcs-stage` |
+| `dinasi-stage` | `https://api.dinasidirect.com` | `mcs-prod` |
 
 More profiles can be added as new tenants onboard — see
 [claude-plugin/server/src/index.ts](claude-plugin/server/src/index.ts) `PROFILES` constant.
@@ -70,7 +70,7 @@ or custom URL/tenant). Full walkthrough and other clients below:
 ```bash
 TOKEN="<your analytics:read JWT>"
 API_URL="<your Cloudshops backend>"     # e.g. https://api.dinasidirect.com
-TENANT="<your tenant id>"                # e.g. mcs-stage
+TENANT="<your tenant id>"                # e.g. mcs-prod
 
 curl -sS -X POST \
   -H "Authorization: Bearer $TOKEN" \
@@ -130,8 +130,8 @@ Edit `claude-plugin/server/src/index.ts`, extend the `PROFILES` constant:
 const PROFILES: Record<string, Profile> = {
   "dinasi-stage": {
     apiUrl: "https://api.dinasidirect.com",
-    tenantId: "mcs-stage",
-    label: "Dinasi Direct (staging)",
+    tenantId: "mcs-prod",
+    label: "Dinasi Direct (staging environment, mcs-prod tenant)",
   },
   "your-tenant-key": {
     apiUrl: "https://api.example.com",

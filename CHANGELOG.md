@@ -5,6 +5,19 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-05-04
+
+### Fixed
+- `dinasi-stage` profile preset now uses `tenantId: "mcs-prod"` (was
+  `"mcs-stage"`). The Cloudshops staging environment stores its data
+  under the `mcs-prod` tenant key by design — the previous preset
+  silently filtered to a tenant that has zero rows, which made every
+  query return `(no rows)` and the `describe_schema` reference label
+  the wrong tenant. This is the SEV-3 tenant-label bug from
+  `etl-issues.md`. Existing installations using the profile need to
+  pull this update; installations that supply `CLOUDSHOPS_TENANT_ID`
+  explicitly were never affected.
+
 ## [0.4.1] - 2026-05-04
 
 ### Fixed

@@ -15784,8 +15784,12 @@ var StdioServerTransport = class {
 var PROFILES = {
   "dinasi-stage": {
     apiUrl: "https://api.dinasidirect.com",
-    tenantId: "mcs-stage",
-    label: "Dinasi Direct (staging)"
+    // The Cloudshops staging environment stores its data under the
+    // tenant key "mcs-prod" by design (legacy from when staging was
+    // promoted from prod data). Setting this to "mcs-stage" returns
+    // zero rows and shows the wrong label in the schema reference.
+    tenantId: "mcs-prod",
+    label: "Dinasi Direct (staging environment, mcs-prod tenant)"
   }
 };
 var profileKey = (process.env.CLOUDSHOPS_PROFILE ?? "").trim();

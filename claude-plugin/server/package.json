@@ -1,6 +1,6 @@
 {
   "name": "cloudshops-mcp-analytics",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "MCP server exposing the Cloudshops analytics DB to LLM clients via the backend query gateway. Friendly business names + 5 tools: describe_schema, run_sql, save_analysis, list_saved_analyses, load_analysis. Profile presets supported.",
   "type": "module",
   "main": "dist/index.js",
