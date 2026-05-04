@@ -6,6 +6,37 @@ Bugs are ordered roughly by severity (data correctness → operational gaps → 
 
 ---
 
+## Fix tracking — 2026-05-04 update
+
+After reading the actual ETL code, most "ETL bugs" turned out to be writer-side (mobile app emits a different JSON shape than the parser expected) or expected-NULL-by-design (mobile-app orders never carry a `staff_user_id`). The team chose **not** to change the mobile app; fixes land on the ETL side.
+
+| Defect | Resolution | Where the fix is |
+|---|---|---|
+| SEV-3 #12 — tenant label `mcs-stage` vs `mcs-prod` | **Shipped** in plugin v0.4.2 | `cloudshops-claude-plugin` `a0d774d` |
+| SEV-1 #2 — line-item `unit_price`/`total_price` NULL | **Queued** — parser now reads the `{amount, currency}` object shape the app emits | `bootstrapped` dinasi branch |
+| SEV-1 #3 — `staff_user_id` NULL | **Queued** — derived via territory join (`staff_customer_account_association` active at `creation_date` → `staff.current_user_id`); no longer reads `purchase.staff_user_id` | `bootstrapped` dinasi branch |
+| SEV-2 #5 — `coupon_code` "AC2301", `discount_amount` 0 | **Queued** — parser reads from `billSummary.coupon.couponCode/discountAmount` first; falls back to legacy `discount.code` only if non-placeholder | `bootstrapped` dinasi branch |
+| SEV-3 #11 — `product_name` NULL | **Queued** (partial) — added `itemName` as 3rd fallback. `product_code`/`image_link` still NULL because writer doesn't emit them at all. | `bootstrapped` dinasi branch |
+| SEV-1 #1 — warehouse 9 days stale | **Likely operational** — scheduler is wired (`AnalyticsLoadScheduledTask` cron `0 0 0 * * *` IST), loaders are correct. Two genuine ETL bugs were already fixed in `d98f4be` (Apr 30) but not deployed: `DimCustomerLoader` empty-load and `FactStaffCustomerAccountAssignmentLoader` ClassCastException. Most likely causes for the Apr-25 cutoff: (a) source `purchase` table has no rows since Apr 25, or (b) deployed backend hasn't picked up the d98f4be fix and one loader is throwing. | Verify on deploy + DB |
+| SEV-2 #4 — delivery tables empty/sparse | **Likely operational** — loaders are correct. `delivery_payment_collection` (9 rows) and `delivery_delivery_return` (2 rows) most likely have similarly few rows in the source. | Verify in source DB |
+| SEV-2 #6 — `delivery_charge_amount` NULL | **Not addressed** — mobile app's `billSummary` doesn't emit `deliveryCharge` at all; team chose not to change the app. | Backlog |
+| SEV-2 #7 — `payment_gateway` NULL | **Not addressed** — source `purchase.payment_gateway` column is NULL on every row; needs order-creation/payment-completion side fix. | Backlog |
+| SEV-3 #8 — `not_available` semantics | **Source data quality** — loader passes `t.not_available` through verbatim. | Source cleanup, separate from ETL |
+| SEV-3 #9 — `primary_category_name` NULL | **Known v1 deferral** — `DimToyLoader.java:23-26` comment: "needs schema verification before we wire it up. Tracked as a v2 enrichment." | v2 work |
+| SEV-3 #10 — `brand` contains SKU descriptors | **Source data quality** — loader passes `t.brand` through verbatim. | Source cleanup |
+| SEV-3 #11 partial — `product_code`, `image_link` NULL | **Not addressed** — mobile app doesn't emit these keys; team chose not to change the app. | Backlog |
+
+**What needs to happen for queued items to take effect:**
+
+1. Deploy `bootstrapped` dinasi branch (HEAD currently the parser+staff-attribution commit).
+2. After next nightly ETL run (cron `0 0 0 * * *` IST), the 7-day lookback re-loads recent rows with the new logic. Historical rows older than 7 days will still have the old NULL values until a manual backfill — re-run with a wider lookback or full reload via the manual trigger endpoint.
+
+**Caveat on the new `staff_user_id` semantics:**
+
+Previously the schema reference said "`staff_user_id` NULL = customer self-service". With territory-based derivation, NULL now means "the customer's firm had no rep assigned at the order's creation date." There's currently no signal to distinguish self-service from rep-driven, since the source column was always NULL anyway. If that distinction matters for analytics, the order-creation path on the backend would need to start populating `purchase.staff_user_id` directly when a rep places an order on behalf of a customer.
+
+---
+
 ## SEV-1 — Data freshness: warehouse is 9+ days stale
 
 ```sql
@@ -217,12 +248,12 @@ The tool's output says "scoped to tenant **mcs-stage**", but the actual `tenant_
 - [x] Customer-firm spend ranking, dormancy/churn list — working
 - [x] Top products by units (last 10d / 30d) — working
 - [x] Sales rep performance via territory join — working
-- [ ] **Tenant scope label** — blocked on SEV-3 (cosmetic)
-- [ ] **Top products by revenue** — blocked on SEV-1 (line-item prices NULL)
-- [ ] **Self-service vs rep-driven attribution** — blocked on SEV-1 (`staff_user_id` NULL)
-- [ ] **Real-time / yesterday's numbers** — blocked on SEV-1 (warehouse stale)
-- [ ] **Delivery success rate, returns rate, payment-mode mix** — blocked on SEV-2 (delivery tables empty)
-- [ ] **Coupon analytics, discount-to-revenue ratio** — blocked on SEV-2 (`discount_amount` always 0)
-- [ ] **Delivery charge / payment-gateway slicing** — blocked on SEV-2 (always NULL)
-- [ ] **Catalog availability and category rollups** — blocked on SEV-3 (`not_available` semantics, `primary_category_name` NULL)
-- [ ] **Brand rollups** — blocked on SEV-3 (`brand` has wrong values)
+- [x] **Tenant scope label** — fixed in plugin v0.4.2
+- [x] **Top products by revenue** — parser fix queued (deploy + nightly run will populate)
+- [x] **Sales rep attribution** — territory-based derivation queued (deploy + nightly run will populate)
+- [x] **Coupon analytics** — parser fix queued (`coupon_code`, `discount_amount` will populate when the `coupon` block is present in the JSON)
+- [ ] **Real-time / yesterday's numbers** — blocked on operational verification (most likely cause is no source orders since Apr 25)
+- [ ] **Delivery success rate, returns rate, payment-mode mix** — likely operational (source tables sparse)
+- [ ] **Delivery charge / payment-gateway slicing** — backlog (writer/source side)
+- [ ] **Catalog availability and category rollups** — `not_available` is source data quality; `primary_category_name` is a v2 ETL enrichment
+- [ ] **Brand rollups** — source data quality
