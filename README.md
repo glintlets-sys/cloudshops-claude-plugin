@@ -48,6 +48,16 @@ When you set both a profile and explicit env vars, the explicit vars win.
 
 ## Install
 
+**Quick install (Claude Code)** — paste these two lines into a Claude Code session:
+
+```
+/plugin marketplace add glintlets-sys/cloudshops-claude-plugin
+/plugin install cloudshops-analytics@cloudshops-claude-plugin
+```
+
+You'll be prompted for your `analytics:read` JWT (and a profile preset
+or custom URL/tenant). Full walkthrough and other clients below:
+
 | Client | Guide |
 |---|---|
 | Claude Desktop | [docs/install-claude-desktop.md](docs/install-claude-desktop.md) |
